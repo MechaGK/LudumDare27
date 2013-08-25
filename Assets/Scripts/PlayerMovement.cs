@@ -4,53 +4,84 @@ using System.Collections;
 public class PlayerMovement : MonoBehaviour
 {
     Transform myTransform;
+    public Transform attackTrigger;
+    public Renderer arms;
+
+    public Texture playerRight;
+    public Texture playerLeft;
+    public Texture armsRight;
+    public Texture armsLeft;
+    public Texture armsStraightRight;
+    public Texture armsStraightLeft;
+
+    PlayerAttack attackScript;
 
     public float speed = 2;
     public float jumpSpeed = 3;
 
     float jumpTimer = 10.000f;
     bool hasJumped = false;
-    public TextMesh timer;
     Vector3 posBeforeJump;
 
     float characterHeight;
+
+    bool controlable = false;
+    float pushTimer = 0;
 
     void Start()
     {
         myTransform = transform;
 
         characterHeight = renderer.bounds.size.y;
+        attackScript = attackTrigger.GetComponent<PlayerAttack>();
+    }
+
+    void Update()
+    {
+        if (Input.GetAxis("Horizontal") < 0)
+        {
+            renderer.material.mainTexture = playerLeft;
+            arms.material.mainTexture = attackScript.armsReset ? armsLeft : armsStraightLeft;
+            attackTrigger.localPosition = new Vector3(-Mathf.Abs(attackTrigger.localPosition.x), 0, 0);
+            
+        }
+        else if (Input.GetAxis("Horizontal") > 0)
+        {
+            renderer.material.mainTexture = playerRight;
+            arms.material.mainTexture = attackScript.armsReset ? armsRight : armsStraightRight;
+            attackTrigger.localPosition = new Vector3(Mathf.Abs(attackTrigger.localPosition.x), 0, 0);
+        }
     }
 
     void FixedUpdate()
     {
-        if (jumpTimer <= 0)
+        if (controlable)
         {
-            if (jumpTimer < 0)
+
+
+            if (isGrounded())
             {
-                jumpTimer = 0;
+                rigidbody.velocity = rigidbody.velocity + new Vector3(1, 0, 1);
+
+                if (Input.GetButton("Jump"))
+                {
+                    rigidbody.velocity += Vector3.up * jumpSpeed;
+                }
             }
-            
-            if (isGrounded() && hasJumped)
-            {
-                jumpTimer = 10.0f;
-                hasJumped = false;
-            }
-            else if (!hasJumped)
-            {
-                rigidbody.velocity += Vector3.up * jumpSpeed;
-                hasJumped = true;
-            }
-            
+
+            //rigidbody.velocity = new Vector3(speed * Input.GetAxis("Horizontal"), rigidbody.velocity.y, 0);
+            rigidbody.AddForce(Vector3.right * speed * Input.GetAxis("Horizontal"), ForceMode.Acceleration);
         }
         else
         {
-            jumpTimer -= Time.deltaTime;
+            pushTimer += Time.deltaTime;
+
+            if (pushTimer >= 0.5f)
+            {
+                pushTimer = 0;
+                controlable = true;
+            }
         }
-
-        timer.text = jumpTimer.ToString("F3");
-
-        rigidbody.velocity = new Vector3(speed * Input.GetAxis("Horizontal"), rigidbody.velocity.y, 0);
 
         rigidbody.useGravity = isGrounded() ? false : true;
     }
@@ -71,5 +102,23 @@ public class PlayerMovement : MonoBehaviour
             }
         }
         else return false;
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            rigidbody.AddForce(Vector3.left * 10, ForceMode.Impulse);
+            controlable = false;
+        }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Gold"))
+        {
+            GameController.gold++;
+            Destroy(other.gameObject);
+        }
     }
 }
