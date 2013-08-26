@@ -153,12 +153,19 @@ public class GameController : MonoBehaviour
         {
             if (Input.GetButton("Retry"))
             {
-                Retry();
+                if (checkpointActivated)
+                {
+                    Retry(12, checkpointPosition);
+                }
+                else
+                {
+                    Retry();
+                }
             }
 
-            if (Input.GetButton("Cancel"))
+            if (Input.GetButton("Cancel") && checkpointActivated)
             {
-                Application.Quit();
+                Retry();
             }
         }
 
@@ -182,20 +189,18 @@ public class GameController : MonoBehaviour
 
             if (Input.GetButton("Retry"))
             {
-                if (checkpointActivated)
-                {
-                    Retry(12, checkpointPosition);
-                }
-                else
-                {
-                    Retry();
-                }
-            }
-
-            if (Input.GetButton("Cancel") && checkpointActivated)
-            {
                 Retry();
             }
+
+            if (Input.GetButton("Cancel"))
+            {
+                Application.Quit();
+            }
+        }
+
+        if (Input.GetKey(KeyCode.Escape))
+        {
+            Application.Quit();
         }
     }
 
